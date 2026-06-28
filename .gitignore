@@ -1,0 +1,21 @@
+# Dependencies
+node_modules
+
+# Build output (Vercel rebuilds from source)
+dist
+
+# Vercel local link + secrets
+.vercel
+.env
+.env.local
+.env.*.local
+
+# Local tooling / editor
+.DS_Store
+*.code-workspace
+.claude
+
+# Large unrelated local folders / duplicate source media
+stable-diffusion-webui
+ElevenLabs_*.mp4
+Nebula_*.mp3

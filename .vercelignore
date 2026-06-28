@@ -1,0 +1,13 @@
+# Heavy / irrelevant files that should never be uploaded to Vercel.
+# (The build still has what it needs: index.html, src/, assets/, vite config.)
+node_modules
+dist
+.vercel
+stable-diffusion-webui
+.claude
+.DS_Store
+*.code-workspace
+
+# Root-level duplicate source media (the used copies live in /assets)
+ElevenLabs_*.mp4
+Nebula_*.mp3

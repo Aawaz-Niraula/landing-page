@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Aawax — your AI study & speaking coach</title>
+    <meta name="description" content="Aawax is a friendly AI companion powering two apps: StudyBuddy and Speaker Coach." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Sora:wght@500;600;700&family=Dancing+Script:wght@600;700&family=Cormorant+Garamond:ital,wght@1,400;1,500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/src/index.css" />
+  </head>
+  <body>
+    <!-- ===== Cursor aurora + dot ===== -->
+    <div id="cursor-aurora" aria-hidden="true"></div>
+    <div id="cursor-dot" aria-hidden="true"></div>
+
+    <!-- ===== Cinematic grain + vignette (top-layer depth) ===== -->
+    <div id="grain" aria-hidden="true"></div>
+    <div id="vignette" aria-hidden="true"></div>
+
+    <!-- ===== Top scroll-progress hairline ===== -->
+    <div id="scroll-progress" aria-hidden="true"><span></span></div>
+
+    <!-- ===== Chapter rail (section progress + jump nav) ===== -->
+    <nav id="chapters" aria-label="Section progress">
+      <a class="chap is-active" href="#hero"><span class="chap-i">01</span><span class="chap-dot"></span><span class="chap-name">Intro</span></a>
+      <a class="chap" href="#studybuddy"><span class="chap-i">02</span><span class="chap-dot"></span><span class="chap-name">StudyBuddy</span></a>
+      <a class="chap" href="#speaker-coach"><span class="chap-i">03</span><span class="chap-dot"></span><span class="chap-name">Speaker</span></a>
+      <a class="chap" href="#how"><span class="chap-i">04</span><span class="chap-dot"></span><span class="chap-name">Inside</span></a>
+      <a class="chap" href="#cta"><span class="chap-i">05</span><span class="chap-dot"></span><span class="chap-name">Start</span></a>
+    </nav>
+
+    <!-- ===== Portal backdrop ===== -->
+    <div id="portal-backdrop" aria-hidden="true"></div>
+
+    <!-- ===== Lens flare flash (z=39, above canvas z=38) ===== -->
+    <div id="lens-flare" aria-hidden="true"></div>
+
+    <!-- ===== Portal frame: ring + label ABOVE the clipped canvas ===== -->
+    <div id="portal-frame" aria-hidden="true">
+      <div class="portal-ring"></div>
+      <div class="portal-content">
+        <div class="portal-icon"></div>
+        <div class="portal-label"></div>
+      </div>
+    </div>
+
+    <!-- ===== Curtain bars (section-to-section wipe) ===== -->
+    <div id="curtain" aria-hidden="true">
+      <div class="c-bar"></div><div class="c-bar"></div>
+      <div class="c-bar"></div><div class="c-bar"></div>
+      <div class="c-bar"></div>
+    </div>
+
+    <!-- ===== Aawax guided tour: hint + speech bubble (positioned by JS) ===== -->
+    <button id="aawax-hint" type="button"><span class="ah-hand">👋</span> Take the tour</button>
+    <div id="aawax-bubble" aria-live="polite">
+      <p class="ab-text"></p>
+      <button class="ab-next" type="button">Next</button>
+    </div>
+
+    <!-- ===== Three.js background layer: fixed, full-screen, z-index:-1 ===== -->
+    <canvas id="bg" aria-hidden="true"></canvas>
+
+    <!-- ===== Hero video: fixed, full-screen, above canvas, fades on scroll ===== -->
+    <video id="hero-video" autoplay muted playsinline aria-hidden="true">
+      <source src="/assets/aawaz-hero.mp4" type="video/mp4">
+    </video>
+
+    <!-- ===== Ambient music ===== -->
+    <audio id="bg-music" loop preload="auto">
+      <source src="/assets/aawaz-music.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- ===== Music toggle button ===== -->
+    <button class="music-btn" id="music-toggle" aria-label="Toggle ambient music">
+      <svg class="icon-muted" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+        <line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>
+      </svg>
+      <svg class="icon-playing" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+        <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+      </svg>
+    </button>
+
+    <!-- ===== Floating nav (scrolls on top of the canvas) ===== -->
+    <nav class="nav" aria-label="Primary">
+      <a class="brand" href="#hero"><span class="logo"></span>Aawax</a>
+      <div class="links">
+        <a class="hide-sm" href="https://studybuddy.aawax.me" target="_blank" rel="noopener noreferrer">StudyBuddy</a>
+        <a class="hide-sm" href="https://speaker-coach.aawax.me" target="_blank" rel="noopener noreferrer">Speaker Coach</a>
+        <a class="cta" href="#cta">Get started</a>
+      </div>
+    </nav>
+
+    <!-- ===== Scrolling HTML content ===== -->
+    <main id="scroll">
+      <!-- 1 — HERO -->
+      <section class="section s-hero" id="hero" data-section="hero" aria-label="Introduction">
+        <div class="panel center">
+          <p class="eyebrow"><span class="dot"></span> An AI companion on a mission</p>
+          <h1>Meet <span class="gradient-text">Aawax</span>.</h1>
+          <p class="lead">
+            Your tiny coach from another world — one friendly mascot powering two apps:
+            <strong>StudyBuddy</strong> to learn faster and <strong>Speaker&nbsp;Coach</strong> to speak better.
+          </p>
+          <div class="actions">
+            <a class="btn btn-primary" href="#cta">Explore the apps →</a>
+            <a class="btn btn-ghost" href="https://speaker-coach.aawax.me" target="_blank" rel="noopener noreferrer">Try a live demo</a>
+          </div>
+        </div>
+        <div class="scroll-hint"><span>Scroll</span><span class="mouse"></span></div>
+      </section>
+
+      <!-- 2 — STUDYBUDDY (nerd) -->
+      <section class="section s-study" id="studybuddy" data-section="studybuddy" aria-label="StudyBuddy">
+        <div class="speech speech-left" data-speech>I can't study… the world's so boring.</div>
+        <div class="showcase flip">
+          <div class="panel">
+            <p class="badge"><span class="swatch" style="--c:#6fd6ff"></span> StudyBuddy</p>
+            <h2>Learn faster,<br />remember longer.</h2>
+            <p class="body">Turn any topic into smart flashcards and adaptive quizzes. Aawax spaces your reviews so things actually stick — and cheers every streak.</p>
+            <ul class="feature-list">
+              <li>Auto-generated decks from your notes</li>
+              <li>Spaced repetition that adapts to you</li>
+              <li>Streaks, mastery tracking &amp; daily goals</li>
+            </ul>
+            <a class="btn btn-study" href="https://studybuddy.aawax.me" target="_blank" rel="noopener noreferrer">Open StudyBuddy →</a>
+          </div>
+          <div class="demo-col">
+            <div class="device" style="--accent:#4ade80" data-reveal="up">
+              <div class="device-bar"><i></i><i></i><i></i><span class="device-url">studybuddy.aawax.me</span></div>
+              <div class="device-screen demo-study">
+                <div class="demo-head"><span class="demo-tag sky">Biology · Deck</span><span class="demo-streak">🔥 12-day streak</span></div>
+                <div class="flash-wrap" data-tour="Flip through smart flashcards Aawax builds straight from your notes."><div class="flash">
+                  <div class="flash-face front"><span>What carries genetic information?</span></div>
+                  <div class="flash-face back"><b>DNA</b><span>deoxyribonucleic acid</span></div>
+                </div></div>
+                <div class="quiz" data-tour="Adaptive quizzes drill exactly what you keep getting wrong.">
+                  <div class="quiz-opt active"><span class="quiz-key">A</span>DNA</div>
+                  <div class="quiz-opt"><span class="quiz-key">B</span>RNA</div>
+                  <div class="quiz-opt"><span class="quiz-key">C</span>Lipids</div>
+                </div>
+                <div class="bar-row" data-tour="Your mastery bar climbs as each concept truly sticks."><span>Mastery</span><div class="bar"><div class="bar-fill sky"></div></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3 — SPEAKER COACH (snake) -->
+      <section class="section s-speak" id="speaker-coach" data-section="speaker" aria-label="Speaker Coach">
+        <div class="speech speech-right" data-speech>Sssmooth talker.</div>
+        <div class="showcase">
+          <div class="panel">
+            <p class="badge"><span class="swatch" style="--c:#ff9ec0"></span> Speaker Coach</p>
+            <h2>Speak like<br />you mean it.</h2>
+            <p class="body">Aawax listens as you talk and flags filler words, runaway pace, and the pauses that land — live. Practice a toast or a pitch and watch your confidence climb.</p>
+            <ul class="feature-list">
+              <li>Real-time pace &amp; filler-word feedback</li>
+              <li>Drills that adapt to your goal</li>
+              <li>Scored sessions you can track over time</li>
+            </ul>
+            <a class="btn btn-speak" href="https://speaker-coach.aawax.me" target="_blank" rel="noopener noreferrer">Open Speaker Coach →</a>
+          </div>
+          <div class="demo-col">
+            <div class="device" style="--accent:#a855f7" data-reveal="up">
+              <div class="device-bar"><i></i><i></i><i></i><span class="device-url">speaker-coach.aawax.me</span></div>
+              <div class="device-screen demo-speak">
+                <div class="demo-head"><span class="demo-tag coral">● Live session</span><span class="demo-timer">00:42</span></div>
+                <div class="wave" data-wave data-tour="Aawax listens live and visualises every word as you speak."></div>
+                <div class="metrics" data-tour="Real-time pace and filler-word counts keep you sharp and clear.">
+                  <div class="metric"><span class="metric-label">Pace</span><span class="metric-val sky">132 <i>wpm</i></span><div class="bar"><div class="bar-fill sky2"></div></div></div>
+                  <div class="metric"><span class="metric-label">Filler words</span><span class="metric-val coral">3</span><div class="bar"><div class="bar-fill coral2"></div></div></div>
+                </div>
+                <div class="confidence" data-tour="A confidence score you can watch climb session after session."><span>Confidence</span><strong>Strong &amp; steady</strong></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4 — HOW IT WORKS (bento) -->
+      <section class="section s-how" id="how" data-section="how" aria-label="How Aawax works">
+        <div class="how-inner">
+          <header class="how-head">
+            <p class="eyebrow"><span class="dot"></span> Under the hood</p>
+            <h2>One companion,<br />engineered to <span class="gradient-text">stick</span>.</h2>
+          </header>
+          <div class="bento">
+            <article class="b-card b-2x2 acc-violet" data-reveal="up">
+              <div class="b-orb" aria-hidden="true"></div>
+              <h3>Two apps.<br />One Aawax.</h3>
+              <p>The same friendly mind learns how <em>you</em> learn — then shows up as the coach each moment needs.</p>
+            </article>
+
+            <article class="b-card b-2 acc-sky" data-reveal="up">
+              <svg class="b-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+              <h3>Adaptive by design</h3>
+              <p>Decks and drills reshape to your pace, your gaps, your goals — automatically.</p>
+            </article>
+
+            <article class="b-card b-2 acc-coral" data-reveal="up">
+              <svg class="b-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+              <h3>Real-time feedback</h3>
+              <p>Live pace, filler words, and the pauses that actually land — as you speak.</p>
+            </article>
+
+            <article class="b-card acc-sky" data-reveal="up">
+              <svg class="b-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+              <h3>Spaced repetition</h3>
+              <p>Reviews timed so it sticks.</p>
+            </article>
+
+            <article class="b-card acc-violet" data-reveal="up">
+              <svg class="b-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4zM17 5h2a2 2 0 0 1 0 4h-2M7 5H5a2 2 0 0 0 0 4h2"/></svg>
+              <h3>Streaks &amp; mastery</h3>
+              <p>Progress you can feel.</p>
+            </article>
+
+            <article class="b-card b-2 acc-coral" data-reveal="up">
+              <svg class="b-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 4.6L19 9l-3.6 3.2L16.3 18 12 15.3 7.7 18l.9-5.8L5 9l5.1-1.4z"/></svg>
+              <h3>Always in your corner</h3>
+              <p>Aawax celebrates every win and nudges the next one.</p>
+              <div class="b-bars" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5 — CTA -->
+      <section class="section s-cta" id="cta" data-section="cta" aria-label="Get started">
+        <div class="panel center">
+          <p class="eyebrow"><span class="dot"></span> Ready when you are</p>
+          <h2>Pick your mission.<br />Aawax has your back.</h2>
+          <div class="cta-grid">
+            <a class="cta-card" href="https://studybuddy.aawax.me" target="_blank" rel="noopener noreferrer">
+              <span class="k"><span class="swatch" style="--c:#6fd6ff"></span>StudyBuddy</span>
+              <p>Smart flashcards &amp; adaptive quizzes that make studying stick.</p>
+              <span class="go sky">Launch app →</span>
+            </a>
+            <a class="cta-card" href="https://speaker-coach.aawax.me" target="_blank" rel="noopener noreferrer">
+              <span class="k"><span class="swatch" style="--c:#ff9ec0"></span>Speaker Coach</span>
+              <p>Live feedback on pace, fillers &amp; confidence as you speak.</p>
+              <span class="go coral">Launch app →</span>
+            </a>
+          </div>
+          <footer>Built with care · Aawax © 2026</footer>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
