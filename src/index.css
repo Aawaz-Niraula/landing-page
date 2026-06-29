@@ -89,6 +89,7 @@ a { color: inherit; }
 /* ===== Sections ===== */
 .section {
   min-height: 100vh;
+  min-height: 100svh;  /* small-viewport unit: no jump when the mobile URL bar hides/shows */
   display: flex;
   align-items: center;
   padding: clamp(2rem, 6vw, 7rem) clamp(1.4rem, 7vw, 9rem);
@@ -263,13 +264,17 @@ footer { padding: 3rem 0 1rem; text-align: center; color: var(--muted); font-siz
 
 /* ===== Responsive ===== */
 @media (max-width: 860px) {
-  .showcase, .showcase.flip { grid-template-columns: 1fr; }
+  /* Single clean column. Aawax now lives BEHIND these cards (canvas z:-1),
+     so content just centres normally — no big top padding, no overlap. */
+  .showcase, .showcase.flip { grid-template-columns: 1fr; row-gap: 1.6rem; }
   .showcase.flip .panel { order: 0; }
   .demo-col { order: 2; }
   .cta-grid { grid-template-columns: 1fr; }
-  .s-study, .s-speak { padding-top: 42vh; }
-  .showcase .panel { background: rgba(12,9,22,0.62); backdrop-filter: blur(10px); border: 1px solid var(--line); border-radius: 22px; padding: 1.5rem 1.4rem; }
-  .speech { top: 7%; left: 50%; right: auto; transform: translateX(-50%) scale(0.6); }
+  .section { padding-top: clamp(6rem, 16vw, 8rem); padding-bottom: clamp(3rem, 10vw, 5rem); }
+  /* Glass cards keep copy readable over the background Aawax. */
+  .showcase .panel { background: rgba(12,9,22,0.74); backdrop-filter: blur(12px); border: 1px solid var(--line); border-radius: 22px; padding: 1.5rem 1.4rem; }
+  .device { background: linear-gradient(165deg,#1d1530,#120c1f); }
+  .speech { top: 4%; left: 50%; right: auto; transform: translateX(-50%) scale(0.6); white-space: normal; max-width: 80vw; text-align: center; }
   .speech.show { transform: translateX(-50%) scale(1); }
   .speech::after { left: 50%; right: auto; transform: translateX(-50%); }
 }

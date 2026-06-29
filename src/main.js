@@ -10,6 +10,10 @@ gsap.registerPlugin(ScrollTrigger, CustomEase);
 
 const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const damp = (a, b, l, dt) => a + (b - a) * (1 - Math.exp(-l * dt));
+const isMobile = () => window.innerWidth < 860;
+// Cap the device-pixel-ratio hard on phones (DPR 2-3 at full res is the main
+// cause of mobile jank); desktops get up to 1.5.
+const targetDPR = () => Math.min(window.devicePixelRatio, isMobile() ? 1 : 1.5);
 
 /* ===================================================================== *
  * ORGANIC EASE — one custom curve reused across the whole orchestration.
@@ -53,7 +57,7 @@ if (!reduced) {
  * ===================================================================== */
 const canvas = document.getElementById('bg');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+renderer.setPixelRatio(targetDPR());
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -128,14 +132,15 @@ innerShock.scale.setScalar(0.01); rig.add(innerShock);
 // SCREEN-SPACE anchors: fx,fy are viewport fractions (0..1), converted to world
 // every frame so Aawax always lands in the visible EMPTY zone at any aspect
 // ratio — and stays SMALL beside the app content instead of behind it.
+// Desktop: fx/fy/s (screen anchor). Mobile: mfy/ms override so Aawax sits
+// CENTRED, behind the stacked cards as ambient background (there's no room to
+// the side on a phone). mfy/ms default sensibly when omitted.
 const RIG = {
-  hero:  { fx: 0.5,  fy: 0.30, z: 0.0,  s: 0.62 },
-  // study/speak: sit ABOVE the device card (with the speech bubble), never on
-  // it. fy 0.20 keeps Aawax in the empty band between the nav and the card.
-  study: { fx: 0.20, fy: 0.20, z: 0.3,  s: 0.40 }, // top-left, above its card
-  speak: { fx: 0.80, fy: 0.20, z: 0.3,  s: 0.40 }, // top-right, above its card
-  how:   { fx: 0.5,  fy: 0.13, z: -0.6, s: 0.34 }, // small, hovering above the bento
-  cta:   { fx: 0.5,  fy: 0.16, z: 0.0,  s: 0.44 }, // small, presiding above the CTA panel
+  hero:  { fx: 0.5,  fy: 0.30, z: 0.0,  s: 0.62, mfy: 0.30, ms: 0.5 },
+  study: { fx: 0.20, fy: 0.20, z: 0.3,  s: 0.40, mfy: 0.46, ms: 0.66 }, // mobile: behind card
+  speak: { fx: 0.80, fy: 0.20, z: 0.3,  s: 0.40, mfy: 0.46, ms: 0.66 }, // mobile: behind card
+  how:   { fx: 0.5,  fy: 0.13, z: -0.6, s: 0.34, mfy: 0.14, ms: 0.34 },
+  cta:   { fx: 0.5,  fy: 0.16, z: 0.0,  s: 0.44, mfy: 0.16, ms: 0.42 },
 };
 function screenToWorld(fx, fy, worldZ) {
   const dist = camera.position.z - worldZ;
@@ -678,6 +683,9 @@ ScrollTrigger.create({
   onEnter: () => {
     if (touring) return;
     isSpeaking = true; settle(RIG.study, 0.42); fadeHeroVideo(0); // tuck into the empty LEFT
+    // Mobile: skip the cinematic portal entirely — just turn Aawax green +
+    // studious and let the bell-curve fade reveal the content cleanly.
+    if (isMobile()) { studyLook(); return; }
     if (!portalDone.study) {
       portalDone.study = true;
       openPortal('📚','StudyBuddy', RIG.study, studyLook, () => revealSectionContent(studyEl));
@@ -687,7 +695,7 @@ ScrollTrigger.create({
       gsap.delayedCall(1.0, () => showHint(studyEl));
     }
   },
-  onEnterBack: () => { if (touring) return; settle(RIG.study, 0.42); fadeHeroVideo(0); isSpeaking=true; quickFlash(THEME.study.hex, studyLook); colorFlood('study'); gsap.delayedCall(1.0, () => showHint(studyEl)); },
+  onEnterBack: () => { if (touring) return; settle(RIG.study, 0.42); fadeHeroVideo(0); isSpeaking=true; studyLook(); if (isMobile()) return; quickFlash(THEME.study.hex, studyLook); colorFlood('study'); gsap.delayedCall(1.0, () => showHint(studyEl)); },
   onLeave:     () => { if (touring) return; setGlasses(false); isSpeaking=false; hideHint(); },
   onLeaveBack: () => { if (touring) return; setGlasses(false); isSpeaking=false; hideHint(); },
 });
@@ -697,6 +705,7 @@ ScrollTrigger.create({
   onEnter: () => {
     if (touring) return;
     isSpeaking = true; settle(RIG.speak, -0.42); // tuck into the empty RIGHT, look toward the app
+    if (isMobile()) { speakerLook(); return; } // mobile: clean, no cinematic portal
     if (!portalDone.speak) {
       portalDone.speak = true;
       openPortal('🎤','Speaker Coach', RIG.speak, speakerLook, () => revealSectionContent(speakEl));
@@ -706,7 +715,7 @@ ScrollTrigger.create({
       gsap.delayedCall(1.0, () => showHint(speakEl));
     }
   },
-  onEnterBack: () => { if (touring) return; settle(RIG.speak, -0.42); isSpeaking=true; quickFlash(THEME.speak.hex, speakerLook); colorFlood('speak'); gsap.delayedCall(1.0, () => showHint(speakEl)); },
+  onEnterBack: () => { if (touring) return; settle(RIG.speak, -0.42); isSpeaking=true; speakerLook(); if (isMobile()) return; quickFlash(THEME.speak.hex, speakerLook); colorFlood('speak'); gsap.delayedCall(1.0, () => showHint(speakEl)); },
   onLeave:     () => { if (touring) return; toDefault(); isSpeaking=false; hideHint(); },
   onLeaveBack: () => { if (touring) return; toDefault(); isSpeaking=false; hideHint(); },
 });
@@ -1014,14 +1023,17 @@ function render() {
     rig.scale.setScalar(portalRig.s);
   } else {
     // ORGANIC SETTLE: convert the screen anchor → world, ease the rig toward it.
+    // On mobile Aawax is centred and uses the anchor's `mfy`/`ms` so it sits
+    // BEHIND the stacked cards as an ambient background (no room beside them).
     const fx = mob ? 0.5 : (tourFx != null ? tourFx : rigScreen.fx);
     let fy = tourFy != null ? tourFy : rigScreen.fy;
-    if (mob) fy = Math.min(fy, 0.24); // stacked layout → keep Aawax up top
+    if (mob) fy = rigScreen.mfy != null ? rigScreen.mfy : Math.min(fy, 0.24);
     const tgt = screenToWorld(fx, fy, rigScreen.z);
     rigState.x = damp(rigState.x, tgt.x, 3.4, dt);
     rigState.y = damp(rigState.y, tgt.y, 3.4, dt);
     rigState.z = damp(rigState.z, rigScreen.z, 3.4, dt);
-    rigState.s = damp(rigState.s, mob ? rigScreen.s * 0.82 : rigScreen.s, 3.4, dt);
+    const sTgt = mob ? (rigScreen.ms != null ? rigScreen.ms : rigScreen.s * 0.82) : rigScreen.s;
+    rigState.s = damp(rigState.s, sTgt, 3.4, dt);
     rig.position.set(rigState.x, rigState.y + bob, rigState.z);
     rig.scale.setScalar(rigState.s);
   }
@@ -1142,10 +1154,20 @@ render();
 /* ===================================================================== *
  * RESIZE
  * ===================================================================== */
+// On phones the browser chrome (URL bar) hiding/showing fires `resize` with a
+// new HEIGHT constantly while scrolling. Reflowing + ScrollTrigger.refresh on
+// each of those is what makes mobile scroll "glitch". So: always keep the
+// canvas sized, but only refresh layout when the WIDTH actually changes.
+let lastW = window.innerWidth;
+let resizeTO = null;
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-  ScrollTrigger.refresh();
+  renderer.setPixelRatio(targetDPR());
+  if (window.innerWidth !== lastW) {
+    lastW = window.innerWidth;
+    clearTimeout(resizeTO);
+    resizeTO = setTimeout(() => ScrollTrigger.refresh(), 150);
+  }
 });
