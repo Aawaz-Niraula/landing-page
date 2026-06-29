@@ -1031,21 +1031,27 @@ function render() {
     // Desktop showcases: Aawax FOLLOWS its card — same vertical level, in the
     // empty margin beside it — so it scrolls together with the card.
     // Mobile: Aawax is centred behind the stacked cards (mfy/ms ambient bg).
-    let fx, fy;
+    let fx, fy, follow = false;
     if (!mob && trackEl && tourFx == null) {
       const r = trackEl.getBoundingClientRect();
       fy = (r.top + r.height / 2) / window.innerHeight;            // same level as the card
-      const marginCenterPx = trackSide < 0 ? r.left * 0.5          // empty margin to the card's side
-                                            : (r.right + window.innerWidth) * 0.5;
-      fx = marginCenterPx / window.innerWidth;
+      // Centre Aawax in the empty margin beside the card, then clamp so it
+      // always stays fully on-screen (tight margins on narrow laptops).
+      const W = window.innerWidth, halfPx = 118;
+      let cx = trackSide < 0 ? r.left * 0.5 : (r.right + W) * 0.5;
+      cx = Math.min(Math.max(cx, halfPx), W - halfPx);
+      fx = cx / W;
+      follow = true;
     } else {
       fx = mob ? 0.5 : (tourFx != null ? tourFx : rigScreen.fx);
       fy = tourFy != null ? tourFy : rigScreen.fy;
       if (mob) fy = rigScreen.mfy != null ? rigScreen.mfy : Math.min(fy, 0.24);
     }
     const tgt = screenToWorld(fx, fy, rigScreen.z);
-    rigState.x = damp(rigState.x, tgt.x, 3.4, dt);
-    rigState.y = damp(rigState.y, tgt.y, 3.4, dt);
+    // Tighter follow while tracking a card so it stays locked to its level.
+    const L = follow ? 7 : 3.4;
+    rigState.x = damp(rigState.x, tgt.x, L, dt);
+    rigState.y = damp(rigState.y, tgt.y, L, dt);
     rigState.z = damp(rigState.z, rigScreen.z, 3.4, dt);
     const sTgt = mob ? (rigScreen.ms != null ? rigScreen.ms : rigScreen.s * 0.82) : rigScreen.s;
     rigState.s = damp(rigState.s, sTgt, 3.4, dt);
