@@ -274,9 +274,8 @@ footer { padding: 3rem 0 1rem; text-align: center; color: var(--muted); font-siz
   /* Glass cards keep copy readable over the background Aawax. */
   .showcase .panel { background: rgba(12,9,22,0.74); backdrop-filter: blur(12px); border: 1px solid var(--line); border-radius: 22px; padding: 1.5rem 1.4rem; }
   .device { background: linear-gradient(165deg,#1d1530,#120c1f); }
-  .speech { top: 4%; left: 50%; right: auto; transform: translateX(-50%) scale(0.6); white-space: normal; max-width: 80vw; text-align: center; }
-  .speech.show { transform: translateX(-50%) scale(1); }
-  .speech::after { left: 50%; right: auto; transform: translateX(-50%); }
+  /* The "Scroll" hint overlaps the hero copy on short mobile viewports. */
+  .scroll-hint { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .scroll-hint .mouse::after, .flash, .quiz-opt.active, .bar-fill, .wave span, .confidence { animation: none !important; }

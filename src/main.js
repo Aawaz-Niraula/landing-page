@@ -168,6 +168,9 @@ let speakerMode = false, isSpeaking = false, speakPhase = 0;
 let micIntro = false; // true while the mic plays its rise/twist entrance
 // Lock mouse-look during spin
 let spinLock = false;
+// Desktop card-tracking: when set, Aawax follows this element's on-screen
+// position (same vertical level) and scrolls WITH the card. side: -1 left / +1 right.
+let trackEl = null, trackSide = 0;
 // Camera shake intensity (decays each frame)
 let camShake = 0;
 
@@ -674,8 +677,8 @@ function fadeHeroVideo(to) {
 
 ScrollTrigger.create({
   trigger:'#hero', start:'top 60%', end:'bottom 40%',
-  onEnter:     () => { if (touring) return; settle(RIG.hero, 0); hideHint(); fadeHeroVideo(1); },
-  onEnterBack: () => { if (touring) return; settle(RIG.hero, 0); hideHint(); fadeHeroVideo(1); },
+  onEnter:     () => { if (touring) return; trackEl = null; settle(RIG.hero, 0); hideHint(); fadeHeroVideo(1); },
+  onEnterBack: () => { if (touring) return; trackEl = null; settle(RIG.hero, 0); hideHint(); fadeHeroVideo(1); },
 });
 
 ScrollTrigger.create({
@@ -686,6 +689,7 @@ ScrollTrigger.create({
     // Mobile: skip the cinematic portal entirely — just turn Aawax green +
     // studious and let the bell-curve fade reveal the content cleanly.
     if (isMobile()) { studyLook(); return; }
+    trackEl = studyEl.querySelector('.device'); trackSide = -1; // follow the card, look right →
     if (!portalDone.study) {
       portalDone.study = true;
       openPortal('📚','StudyBuddy', RIG.study, studyLook, () => revealSectionContent(studyEl));
@@ -695,7 +699,7 @@ ScrollTrigger.create({
       gsap.delayedCall(1.0, () => showHint(studyEl));
     }
   },
-  onEnterBack: () => { if (touring) return; settle(RIG.study, 0.42); fadeHeroVideo(0); isSpeaking=true; studyLook(); if (isMobile()) return; quickFlash(THEME.study.hex, studyLook); colorFlood('study'); gsap.delayedCall(1.0, () => showHint(studyEl)); },
+  onEnterBack: () => { if (touring) return; settle(RIG.study, 0.42); fadeHeroVideo(0); isSpeaking=true; studyLook(); if (isMobile()) return; trackEl = studyEl.querySelector('.device'); trackSide = -1; quickFlash(THEME.study.hex, studyLook); colorFlood('study'); gsap.delayedCall(1.0, () => showHint(studyEl)); },
   onLeave:     () => { if (touring) return; setGlasses(false); isSpeaking=false; hideHint(); },
   onLeaveBack: () => { if (touring) return; setGlasses(false); isSpeaking=false; hideHint(); },
 });
@@ -706,6 +710,7 @@ ScrollTrigger.create({
     if (touring) return;
     isSpeaking = true; settle(RIG.speak, -0.42); // tuck into the empty RIGHT, look toward the app
     if (isMobile()) { speakerLook(); return; } // mobile: clean, no cinematic portal
+    trackEl = speakEl.querySelector('.device'); trackSide = 1; // follow the card, look left ←
     if (!portalDone.speak) {
       portalDone.speak = true;
       openPortal('🎤','Speaker Coach', RIG.speak, speakerLook, () => revealSectionContent(speakEl));
@@ -715,20 +720,20 @@ ScrollTrigger.create({
       gsap.delayedCall(1.0, () => showHint(speakEl));
     }
   },
-  onEnterBack: () => { if (touring) return; settle(RIG.speak, -0.42); isSpeaking=true; speakerLook(); if (isMobile()) return; quickFlash(THEME.speak.hex, speakerLook); colorFlood('speak'); gsap.delayedCall(1.0, () => showHint(speakEl)); },
+  onEnterBack: () => { if (touring) return; settle(RIG.speak, -0.42); isSpeaking=true; speakerLook(); if (isMobile()) return; trackEl = speakEl.querySelector('.device'); trackSide = 1; quickFlash(THEME.speak.hex, speakerLook); colorFlood('speak'); gsap.delayedCall(1.0, () => showHint(speakEl)); },
   onLeave:     () => { if (touring) return; toDefault(); isSpeaking=false; hideHint(); },
   onLeaveBack: () => { if (touring) return; toDefault(); isSpeaking=false; hideHint(); },
 });
 
 ScrollTrigger.create({
   trigger:'#how', start:'top 60%', end:'bottom 40%',
-  onEnter:     () => { if (touring) return; settle(RIG.how, 0); toDefault(); isSpeaking=false; hideHint(); alien?.setExpression('neutral'); },
-  onEnterBack: () => { if (touring) return; settle(RIG.how, 0); toDefault(); isSpeaking=false; hideHint(); },
+  onEnter:     () => { if (touring) return; trackEl = null; settle(RIG.how, 0); toDefault(); isSpeaking=false; hideHint(); alien?.setExpression('neutral'); },
+  onEnterBack: () => { if (touring) return; trackEl = null; settle(RIG.how, 0); toDefault(); isSpeaking=false; hideHint(); },
 });
 
 ScrollTrigger.create({
   trigger:'#cta', start:'top 60%',
-  onEnter:     () => { if (touring) return; settle(RIG.cta, 0); alien?.setExpression('joyful'); isSpeaking=false; hideHint(); triggerSweep(THEME.default.hex); },
+  onEnter:     () => { if (touring) return; trackEl = null; settle(RIG.cta, 0); alien?.setExpression('joyful'); isSpeaking=false; hideHint(); triggerSweep(THEME.default.hex); },
   onLeaveBack: () => { if (touring) return; alien?.setExpression('neutral'); },
 });
 
@@ -1023,11 +1028,21 @@ function render() {
     rig.scale.setScalar(portalRig.s);
   } else {
     // ORGANIC SETTLE: convert the screen anchor → world, ease the rig toward it.
-    // On mobile Aawax is centred and uses the anchor's `mfy`/`ms` so it sits
-    // BEHIND the stacked cards as an ambient background (no room beside them).
-    const fx = mob ? 0.5 : (tourFx != null ? tourFx : rigScreen.fx);
-    let fy = tourFy != null ? tourFy : rigScreen.fy;
-    if (mob) fy = rigScreen.mfy != null ? rigScreen.mfy : Math.min(fy, 0.24);
+    // Desktop showcases: Aawax FOLLOWS its card — same vertical level, in the
+    // empty margin beside it — so it scrolls together with the card.
+    // Mobile: Aawax is centred behind the stacked cards (mfy/ms ambient bg).
+    let fx, fy;
+    if (!mob && trackEl && tourFx == null) {
+      const r = trackEl.getBoundingClientRect();
+      fy = (r.top + r.height / 2) / window.innerHeight;            // same level as the card
+      const marginCenterPx = trackSide < 0 ? r.left * 0.5          // empty margin to the card's side
+                                            : (r.right + window.innerWidth) * 0.5;
+      fx = marginCenterPx / window.innerWidth;
+    } else {
+      fx = mob ? 0.5 : (tourFx != null ? tourFx : rigScreen.fx);
+      fy = tourFy != null ? tourFy : rigScreen.fy;
+      if (mob) fy = rigScreen.mfy != null ? rigScreen.mfy : Math.min(fy, 0.24);
+    }
     const tgt = screenToWorld(fx, fy, rigScreen.z);
     rigState.x = damp(rigState.x, tgt.x, 3.4, dt);
     rigState.y = damp(rigState.y, tgt.y, 3.4, dt);
