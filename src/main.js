@@ -130,8 +130,10 @@ innerShock.scale.setScalar(0.01); rig.add(innerShock);
 // ratio — and stays SMALL beside the app content instead of behind it.
 const RIG = {
   hero:  { fx: 0.5,  fy: 0.30, z: 0.0,  s: 0.62 },
-  study: { fx: 0.13, fy: 0.52, z: 0.3,  s: 0.42 }, // small, empty LEFT
-  speak: { fx: 0.87, fy: 0.52, z: 0.3,  s: 0.42 }, // small, empty RIGHT
+  // study/speak: sit ABOVE the device card (with the speech bubble), never on
+  // it. fy 0.20 keeps Aawax in the empty band between the nav and the card.
+  study: { fx: 0.20, fy: 0.20, z: 0.3,  s: 0.40 }, // top-left, above its card
+  speak: { fx: 0.80, fy: 0.20, z: 0.3,  s: 0.40 }, // top-right, above its card
   how:   { fx: 0.5,  fy: 0.13, z: -0.6, s: 0.34 }, // small, hovering above the bento
   cta:   { fx: 0.5,  fy: 0.16, z: 0.0,  s: 0.44 }, // small, presiding above the CTA panel
 };
@@ -1037,10 +1039,10 @@ function render() {
 
   // Scroll-velocity weight: skew the showcase blocks + lean Aawax into the scroll.
   if (!reduced) {
-    const target = mob ? 0 : gsap.utils.clamp(-2.4, 2.4, scrollVel * 0.18);
-    skewV = damp(skewV, target, 10, dt);
+    const target = mob ? 0 : gsap.utils.clamp(-0.7, 0.7, scrollVel * 0.05);
+    skewV = damp(skewV, target, 12, dt);
     for (const s of showcases) s.style.transform = `skewY(${skewV.toFixed(3)}deg)`;
-    rig.rotation.z = damp(rig.rotation.z, gsap.utils.clamp(-0.1, 0.1, -scrollVel * 0.0014), 6, dt);
+    rig.rotation.z = damp(rig.rotation.z, gsap.utils.clamp(-0.04, 0.04, -scrollVel * 0.0006), 6, dt);
   }
 
   // Camera shake (decays exponentially)

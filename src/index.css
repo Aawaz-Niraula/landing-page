@@ -53,6 +53,10 @@ a { color: inherit; }
   z-index: 0;          /* above Three.js canvas, below HTML content */
   pointer-events: none;
   will-change: opacity;
+  opacity: 1;          /* visible from first paint — no stale 3D hero flash */
+  /* Opaque backdrop so nothing shows through in the split second before the
+     video decodes its first frame. */
+  background: radial-gradient(120% 120% at 50% 35%, #1a1030 0%, #08060f 70%);
 }
 
 /* ===== Music toggle ===== */
